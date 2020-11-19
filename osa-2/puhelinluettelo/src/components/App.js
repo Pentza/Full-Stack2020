@@ -28,11 +28,6 @@ const App = () => {
       )
   }
 
-  const getPerson = (id) => {
-    return persons.find(p => p.id === id)
-  }
-
-
   const setErrMessage = (message, error) => {
     setError(error)
     setErrorMessage(message)
