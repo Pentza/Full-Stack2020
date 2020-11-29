@@ -2,10 +2,10 @@ require('dotenv').config()
 const http = require('http')
 const express = require('express')
 const app = express()
-const config = require('./utils/logger')
+const config = require('./utils/config')
+const logger = require('./utils/logger')
 const cors = require('cors')
 const mongoose = require('mongoose')
-const logger = require('./utils/logger')
 
 const blogSchema = mongoose.Schema({
   title: String,
@@ -16,10 +16,7 @@ const blogSchema = mongoose.Schema({
 
 const Blog = mongoose.model('Blog', blogSchema)
 
-//const mongoUrl = 'mongodb+srv://pentsa:qmXviaS596aoEFzt@phonebook.ltm1u.mongodb.net/BlogDB?retryWrites=true&w=majority'
-const mongoUrl = process.env.MONGO_URL
-
-mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, useCreateIndex: true })
+mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, useCreateIndex: true })
 
 app.use(cors())
 app.use(express.json())
@@ -42,7 +39,6 @@ app.post('/api/blogs', (request, response) => {
     })
 })
 
-const PORT = process.env.PORT
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`)
+app.listen(config.PORT, () => {
+  logger.info(`Server running on port ${config.PORT}`)
 })
