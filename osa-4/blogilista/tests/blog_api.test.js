@@ -11,13 +11,6 @@ let tok = ''
 
 beforeEach(async () => {
   await Blog.deleteMany({})
-
-  const blogObjects = helper.initialBlogs
-    .map(blog => new Blog(blog))
-  const promiseArray = blogObjects.map(blog => blog.save())
-  await Promise.all(promiseArray)
-
-
   await User.deleteMany({})
 
   const passwordHash = await bcryptjs.hash('topSekret', 10)
@@ -25,8 +18,15 @@ beforeEach(async () => {
     username: 'root',
     passwordHash
   })
-
   await user.save()
+
+
+  const blogObjects = helper.initialBlogs
+    .map(blog => new Blog(blog))
+  const promiseArray = blogObjects.map(blog => blog.save())
+  await Promise.all(promiseArray)
+
+  await Blog.updateMany({}, { $set: { user: user._id } })
 
   const response = await api
     .post('/api/login')
@@ -81,6 +81,30 @@ test('a valid blog can be added ', async () => {
   )
 })
 
+test('blog without token is not added', async () => {
+  const newBlog = {
+    title: 'asd',
+    author: 'asd',
+    url: 'asd...',
+    likes: 1
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(401)
+    .expect('Content-Type', /application\/json/)
+
+  const blogsAtEnd = await helper.blogsInDb()
+
+  const titles = blogsAtEnd.map(r => r.title)
+
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
+  expect(titles).not.toContain(
+    'asd'
+  )
+})
+
 test('blog without title and url is not added', async () => {
   const newBlog = {
     author: 'LikeMe :3',
@@ -117,12 +141,13 @@ test('adding blog without likes adds it with 0 likes', async () => {
   expect(likelessBlog.likes).toBe(0)
 })
 
-test('deletion succeeds with status code 204 if id is valid', async () => {
+test('deletion succeeds with status code 204 if id and token is valid', async () => {
   const blogsAtStart = await helper.blogsInDb()
   const blogToDelete = blogsAtStart[0]
 
   await api
     .delete(`/api/blogs/${blogToDelete.id}`)
+    .set('Authorization', 'Bearer ' + tok)
     .expect(204)
 
   const blogsAtEnd = await helper.blogsInDb()
